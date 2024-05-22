@@ -1,0 +1,5 @@
+nvdlib
+psycopg2-binary
+sqlalchemy
+python-dotenv
+schedule
