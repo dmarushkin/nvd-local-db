@@ -32,17 +32,29 @@ def load_all(db: Session):
     date_ranges = generate_month_ranges()
 
     for from_date, to_date in date_ranges:
-        fetch_and_store_vulnerabilities(db, from_date, to_date)
+        fetch_and_store_vulnerabilities(db, from_date, to_date, load_all=True)
 
+def load_last(db: Session):
 
-def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str):
+    from_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+    to_date = datetime.now().strftime('%Y-%m-%d')
+
+    fetch_and_store_vulnerabilities(db, from_date, to_date)
+
+def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str, load_all: bool = False):
 
     logger.info(f"Fetching vulnerabilities from {from_date} to {to_date}")
     
-    results = nvdlib.searchCVE(
-        pubStartDate=f'{from_date} 00:00',
-        pubEndDate=f'{to_date} 00:00'
-    )
+    if load_all:
+        results = nvdlib.searchCVE(
+            pubStartDate=f'{from_date} 00:00',
+            pubEndDate=f'{to_date} 00:00'
+        )
+    else:
+        results = nvdlib.searchCVE(
+            lastModStartDate=f'{from_date} 00:00',
+            lastModEndDate=f'{to_date} 00:00'
+        )       
 
     for item in results:
 
