@@ -1,4 +1,4 @@
-import os
+import time
 from datetime import datetime, timedelta
 import nvdlib
 from sqlalchemy.orm import Session
@@ -16,7 +16,7 @@ def generate_month_ranges(start_year=1990, end_year=None):
     month_ranges = []
     while current_date < end_date:
         from_date = current_date.strftime('%Y-%m-%d')
-        next_month = current_date.month + 1
+        next_month = current_date.month + 3
         next_year = current_date.year
         if next_month > 12:
             next_month = 1
@@ -33,6 +33,7 @@ def load_all(db: Session):
 
     for from_date, to_date in date_ranges:
         fetch_and_store_vulnerabilities(db, from_date, to_date, load_all=True)
+        time.sleep(30)
 
 def load_last(db: Session):
 
@@ -45,16 +46,25 @@ def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str, l
 
     logger.info(f"Fetching vulnerabilities from {from_date} to {to_date}")
     
-    if load_all:
-        results = nvdlib.searchCVE(
-            pubStartDate=f'{from_date} 00:00',
-            pubEndDate=f'{to_date} 00:00'
-        )
-    else:
-        results = nvdlib.searchCVE(
-            lastModStartDate=f'{from_date} 00:00',
-            lastModEndDate=f'{to_date} 00:00'
-        )       
+    results = []
+    
+    for i in range(3):
+        while True:
+            try:
+                if load_all:
+                    results = nvdlib.searchCVE(
+                        pubStartDate=f'{from_date} 00:00',
+                        pubEndDate=f'{to_date} 00:00'
+                    )
+                else:
+                    results = nvdlib.searchCVE(
+                        lastModStartDate=f'{from_date} 00:00',
+                        lastModEndDate=f'{to_date} 00:00'
+                    )
+            except Exception as e:
+                logger.error(f"Error in fetch results for {from_date} {to_date}, attempt {i}")
+                continue
+            break
 
     for item in results:
 
