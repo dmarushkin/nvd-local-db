@@ -1,4 +1,4 @@
-# nvd-local-db
+# NVD Vulnerabilities Store Service
 
 Get CVE vulnerabilities info from NVD api and store in local postgres db 
 On first start it loads all CVEs from 1990, next runs update insert only CVEs created or changed last week.
