@@ -31,13 +31,13 @@ def load_all(db: Session):
 
     date_ranges = generate_month_ranges()
 
-    for from_date, to_date in date_ranges:
+    for from_date, to_date in reversed(date_ranges):
         fetch_and_store_vulnerabilities(db, from_date, to_date, load_all=True)
         time.sleep(30)
 
 def load_last(db: Session):
 
-    from_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+    from_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     to_date = datetime.now().strftime('%Y-%m-%d')
 
     fetch_and_store_vulnerabilities(db, from_date, to_date)
@@ -59,7 +59,8 @@ def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str, l
                 else:
                     results = nvdlib.searchCVE(
                         lastModStartDate=f'{from_date} 00:00',
-                        lastModEndDate=f'{to_date} 00:00'
+                        lastModEndDate=f'{to_date} 00:00',
+                        hasKev=True
                     )
             except Exception as e:
                 logger.error(f"Error in fetch results for {from_date} {to_date}, attempt {i}")
@@ -71,7 +72,7 @@ def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str, l
         logger.debug(f"Processing CVE {item.id}")
 
         existing_vuln = db.query(Vulnerability).filter(Vulnerability.cve_id == item.id).first()
-
+        
         if existing_vuln:
 
             existing_vuln.description = item.descriptions[0].value
@@ -80,6 +81,7 @@ def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str, l
             existing_vuln.last_modified_date = item.lastModified
             existing_vuln.weaknesses = [e.description[0].value for e in getattr(item, 'weaknesses', [])]
             existing_vuln.references = [e.url for e in getattr(item, 'references', [])]
+            existing_vuln.cpe = [e.criteria for e in getattr(item, 'cpe', [])]
             existing_vuln.score = item.score[1]
             existing_vuln.severity = item.score[2]
             existing_vuln.v31score = getattr(item, 'v31score', None)
@@ -87,9 +89,9 @@ def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str, l
             existing_vuln.v2score = getattr(item, 'v2score', None)
             existing_vuln.cvssV2Severity = getattr(item, 'v2severity', None)
             existing_vuln.cvssV3Severity = getattr(item, 'v31severity', None)
-            existing_vuln.has_cert_alerts = getattr(item, 'hasCertAlerts', None)
-            existing_vuln.has_cert_notes = getattr(item, 'hasCertNotes', None)
-            existing_vuln.has_kev = getattr(item, 'hasKev', None) 
+            existing_vuln.cisaExploitAdd = getattr(item, 'cisaExploitAdd', None) 
+            existing_vuln.cisaRequiredAction = getattr(item, 'cisaRequiredAction', None)
+            existing_vuln.cisaActionDue = getattr(item, 'cisaActionDue', None)
             existing_vuln.v31impactScore = getattr(item, 'v31impactScore', None)
             existing_vuln.v30impactScore = getattr(item, 'v30impactScore', None)
             existing_vuln.v2impactScore = getattr(item, 'v2impactScore', None)
@@ -114,14 +116,16 @@ def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str, l
 
         else: 
 
+
             vuln = Vulnerability(
                 cve_id=item.id,
                 description=item.descriptions[0].value,
                 url=item.url,
                 published_date=item.published,
                 last_modified_date=item.lastModified,
-                weaknesses = [e.description[0].value for e in getattr(item, 'weaknesses', [])],
-                references = [e.url for e in getattr(item, 'references', [])], 
+                weaknesses=[e.description[0].value for e in getattr(item, 'weaknesses', [])],
+                references=[e.url for e in getattr(item, 'references', [])],
+                cpe=[e.criteria for e in getattr(item, 'cpe', [])],
                 score=item.score[1],
                 severity=item.score[2],
                 v31score=getattr(item, 'v31score', None),
@@ -129,9 +133,9 @@ def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str, l
                 v2score=getattr(item, 'v2score', None),
                 cvssV2Severity=getattr(item, 'v2severity', None),
                 cvssV3Severity=getattr(item, 'v31severity', None),
-                has_cert_alerts=getattr(item, 'hasCertAlerts', None),
-                has_cert_notes=getattr(item, 'hasCertNotes', None),
-                has_kev=getattr(item, 'hasKev', None),
+                cisaExploitAdd=getattr(item, 'cisaExploitAdd', None), 
+                cisaRequiredAction=getattr(item, 'cisaRequiredAction', None),
+                cisaActionDue=getattr(item, 'cisaActionDue', None),
                 v31impactScore=getattr(item, 'v31impactScore', None),
                 v30impactScore=getattr(item, 'v30impactScore', None),
                 v2impactScore=getattr(item, 'v2impactScore', None),
