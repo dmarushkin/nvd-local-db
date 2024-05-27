@@ -62,7 +62,8 @@ def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str, l
                         lastModEndDate=f'{to_date} 00:00'
                     )
             except Exception as e:
-                logger.error(f"Error in fetch results for {from_date} {to_date}, attempt {i}")
+                logger.error(f"Error in fetch results for {from_date} {to_date}: {e}, attempt {i}")
+                time.sleep(30)
                 continue
             break
 
