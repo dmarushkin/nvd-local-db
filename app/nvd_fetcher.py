@@ -59,8 +59,7 @@ def fetch_and_store_vulnerabilities(db: Session, from_date: str, to_date: str, l
                 else:
                     results = nvdlib.searchCVE(
                         lastModStartDate=f'{from_date} 00:00',
-                        lastModEndDate=f'{to_date} 00:00',
-                        hasKev=True
+                        lastModEndDate=f'{to_date} 00:00'
                     )
             except Exception as e:
                 logger.error(f"Error in fetch results for {from_date} {to_date}, attempt {i}")
